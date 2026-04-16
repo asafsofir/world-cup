@@ -62,6 +62,7 @@ const TEAM_DISPLAY_NAMES = Object.freeze({
   'Czechia': "צ'כיה",
   'Canada': 'קנדה',
   'Bosnia and Herzegovina': 'בוסניה והרצגובינה',
+  'Bosnia-Herzegovina': 'בוסניה והרצגובינה',
   'Qatar': 'קטר',
   'Switzerland': 'שווייץ',
   'Brazil': 'ברזיל',
@@ -72,6 +73,7 @@ const TEAM_DISPLAY_NAMES = Object.freeze({
   'Paraguay': 'פרגוואי',
   'Australia': 'אוסטרליה',
   'Türkiye': 'טורקיה',
+  'Turkey': 'טורקיה',
   'Germany': 'גרמניה',
   'Curaçao': 'קורסאו',
   "Côte d'Ivoire": 'חוף השנהב',
@@ -83,9 +85,11 @@ const TEAM_DISPLAY_NAMES = Object.freeze({
   'Belgium': 'בלגיה',
   'Egypt': 'מצרים',
   'IR Iran': 'איראן',
+  'Iran': 'איראן',
   'New Zealand': 'ניו זילנד',
   'Spain': 'ספרד',
   'Cabo Verde': 'כף ורדה',
+  'Cape Verde': 'כף ורדה',
   'Saudi Arabia': 'ערב הסעודית',
   'Uruguay': 'אורוגוואי',
   'France': 'צרפת',
@@ -97,7 +101,8 @@ const TEAM_DISPLAY_NAMES = Object.freeze({
   'Austria': 'אוסטריה',
   'Jordan': 'ירדן',
   'Portugal': 'פורטוגל',
-  'Congo DR': 'קונגו DR',
+  'Congo DR': 'ר.ד. קונגו',
+  'DR Congo': 'ר.ד. קונגו',
   'Uzbekistan': 'אוזבקיסטן',
   'Colombia': 'קולומביה',
   'England': 'אנגליה',
@@ -105,9 +110,68 @@ const TEAM_DISPLAY_NAMES = Object.freeze({
   'Ghana': 'גאנה',
   'Panama': 'פנמה',
   'Arsenal': 'ארסנל',
+  'Bayern Munich': 'באיירן מינכן',
   'Sporting CP': 'ספורטינג ליסבון',
   'Bayern München': 'באיירן מינכן',
   'Real Madrid': 'ריאל מדריד',
+});
+
+
+const TEAM_FLAG_EMOJIS = Object.freeze({
+  'Mexico': '🇲🇽',
+  'South Africa': '🇿🇦',
+  'Korea Republic': '🇰🇷',
+  'Czechia': '🇨🇿',
+  'Canada': '🇨🇦',
+  'Bosnia and Herzegovina': '🇧🇦',
+  'Bosnia-Herzegovina': '🇧🇦',
+  'Qatar': '🇶🇦',
+  'Switzerland': '🇨🇭',
+  'Brazil': '🇧🇷',
+  'Morocco': '🇲🇦',
+  'Haiti': '🇭🇹',
+  'Scotland': '🏴',
+  'USA': '🇺🇸',
+  'Paraguay': '🇵🇾',
+  'Australia': '🇦🇺',
+  'Türkiye': '🇹🇷',
+  'Turkey': '🇹🇷',
+  'Germany': '🇩🇪',
+  'Curaçao': '🇨🇼',
+  "Côte d'Ivoire": '🇨🇮',
+  'Ivory Coast': '🇨🇮',
+  'Ecuador': '🇪🇨',
+  'Netherlands': '🇳🇱',
+  'Japan': '🇯🇵',
+  'Sweden': '🇸🇪',
+  'Tunisia': '🇹🇳',
+  'Belgium': '🇧🇪',
+  'Egypt': '🇪🇬',
+  'IR Iran': '🇮🇷',
+  'Iran': '🇮🇷',
+  'New Zealand': '🇳🇿',
+  'Spain': '🇪🇸',
+  'Cabo Verde': '🇨🇻',
+  'Cape Verde': '🇨🇻',
+  'Saudi Arabia': '🇸🇦',
+  'Uruguay': '🇺🇾',
+  'France': '🇫🇷',
+  'Senegal': '🇸🇳',
+  'Iraq': '🇮🇶',
+  'Norway': '🇳🇴',
+  'Argentina': '🇦🇷',
+  'Algeria': '🇩🇿',
+  'Austria': '🇦🇹',
+  'Jordan': '🇯🇴',
+  'Portugal': '🇵🇹',
+  'Congo DR': '🇨🇩',
+  'DR Congo': '🇨🇩',
+  'Uzbekistan': '🇺🇿',
+  'Colombia': '🇨🇴',
+  'England': '🏴',
+  'Croatia': '🇭🇷',
+  'Ghana': '🇬🇭',
+  'Panama': '🇵🇦',
 });
 
 const PLAYER_DISPLAY_NAMES = Object.freeze({
@@ -384,6 +448,15 @@ function localizePlayerName(name) {
   return PLAYER_DISPLAY_NAMES[name] || name;
 }
 
+
+function teamFlag(name) {
+  return TEAM_FLAG_EMOJIS[name] || '';
+}
+
+function compareDisplayLabel(a, b) {
+  return String(a || '').localeCompare(String(b || ''), 'he');
+}
+
 function placeholderDisplayName(label) {
   const winner = /^1([A-L])$/u.exec(label);
   if (winner) return `מקום 1 בבית ${winner[1]}`;
@@ -399,11 +472,11 @@ function placeholderDisplayName(label) {
 }
 
 function makeTeam(name, extra = {}) {
-  return { id: teamId(name), name, displayName: localizeTeamName(name), ...extra };
+  return { id: teamId(name), name, displayName: localizeTeamName(name), flag: teamFlag(name), ...extra };
 }
 
 function makePlaceholderTeam(name, extra = {}) {
-  return { id: teamId(name), name, displayName: placeholderDisplayName(name), placeholder: true, ...extra };
+  return { id: teamId(name), name, displayName: placeholderDisplayName(name), flag: '', placeholder: true, ...extra };
 }
 
 function teamId(label) {
@@ -690,10 +763,11 @@ function buildTopScorerOptions(groups) {
         displayLabel: localizePlayerName(playerName),
         teamName: name,
         teamDisplayName: localizeTeamName(name),
+        teamFlag: teamFlag(name),
       });
     }
   }
-  options.push({ id: 'other', label: 'Other', displayLabel: 'אחר (20 נק׳ אם מלך השערים לא ברשימה)', teamName: 'כללי', teamDisplayName: 'כללי' });
+  options.push({ id: 'other', label: 'Other', displayLabel: 'אחר (20 נק׳ אם מלך השערים לא ברשימה)', teamName: 'כללי', teamDisplayName: 'כללי', teamFlag: '' });
   return options;
 }
 
@@ -825,8 +899,17 @@ function buildWorldCupCompetition() {
     venue: 'New York New Jersey Stadium',
   });
 
-  const topScorerOptions = buildTopScorerOptions(groups);
-  const winnerOptions = groups.flatMap((group) => group.teams).map((team) => ({ id: team.id, label: team.name, displayLabel: team.displayName || team.name }));
+  const topScorerOptions = buildTopScorerOptions(groups).sort((a, b) => {
+    if (a.id === 'other') return 1;
+    if (b.id === 'other') return -1;
+    const teamCmp = compareDisplayLabel(a.teamDisplayName || a.teamName, b.teamDisplayName || b.teamName);
+    if (teamCmp !== 0) return teamCmp;
+    return compareDisplayLabel(a.displayLabel || a.label, b.displayLabel || b.label);
+  });
+  const winnerOptions = groups
+    .flatMap((group) => group.teams)
+    .map((team) => ({ id: team.id, label: team.name, displayLabel: team.displayName || team.name, flag: team.flag || '' }))
+    .sort((a, b) => compareDisplayLabel(a.displayLabel || a.label, b.displayLabel || b.label));
 
   return {
     id: 'worldcup2026',
