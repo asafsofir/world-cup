@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..');
 const publicRoot = path.join(projectRoot, 'public');
-const dataRoot = process.env.DATA_ROOT || process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, 'data');
+const dataRoot = process.env.DATA_ROOT || path.join(__dirname, 'data');
 const usersPath = path.join(dataRoot, 'users.json');
 const statePath = path.join(dataRoot, 'state.json');
 const port = Number(process.env.PORT || 8080);
@@ -54,6 +54,358 @@ const EXACT_TOTAL_POINTS = {
 const LIVE_FINAL_CODES = new Set(['FT', 'AET', 'PEN']);
 const LIVE_STARTED_CODES = new Set(['1H', 'HT', '2H', 'ET', 'P', 'BT', 'LIVE', 'INT']);
 
+
+const TEAM_DISPLAY_NAMES = Object.freeze({
+  'Mexico': 'מקסיקו',
+  'South Africa': 'דרום אפריקה',
+  'Korea Republic': 'דרום קוריאה',
+  'Czechia': "צ'כיה",
+  'Canada': 'קנדה',
+  'Bosnia and Herzegovina': 'בוסניה והרצגובינה',
+  'Qatar': 'קטר',
+  'Switzerland': 'שווייץ',
+  'Brazil': 'ברזיל',
+  'Morocco': 'מרוקו',
+  'Haiti': 'האיטי',
+  'Scotland': 'סקוטלנד',
+  'USA': 'ארה"ב',
+  'Paraguay': 'פרגוואי',
+  'Australia': 'אוסטרליה',
+  'Türkiye': 'טורקיה',
+  'Germany': 'גרמניה',
+  'Curaçao': 'קורסאו',
+  "Côte d'Ivoire": 'חוף השנהב',
+  'Ecuador': 'אקוודור',
+  'Netherlands': 'הולנד',
+  'Japan': 'יפן',
+  'Sweden': 'שוודיה',
+  'Tunisia': 'תוניסיה',
+  'Belgium': 'בלגיה',
+  'Egypt': 'מצרים',
+  'IR Iran': 'איראן',
+  'New Zealand': 'ניו זילנד',
+  'Spain': 'ספרד',
+  'Cabo Verde': 'כף ורדה',
+  'Saudi Arabia': 'ערב הסעודית',
+  'Uruguay': 'אורוגוואי',
+  'France': 'צרפת',
+  'Senegal': 'סנגל',
+  'Iraq': 'עיראק',
+  'Norway': 'נורווגיה',
+  'Argentina': 'ארגנטינה',
+  'Algeria': "אלג'יריה",
+  'Austria': 'אוסטריה',
+  'Jordan': 'ירדן',
+  'Portugal': 'פורטוגל',
+  'Congo DR': 'קונגו DR',
+  'Uzbekistan': 'אוזבקיסטן',
+  'Colombia': 'קולומביה',
+  'England': 'אנגליה',
+  'Croatia': 'קרואטיה',
+  'Ghana': 'גאנה',
+  'Panama': 'פנמה',
+  'Arsenal': 'ארסנל',
+  'Sporting CP': 'ספורטינג ליסבון',
+  'Bayern München': 'באיירן מינכן',
+  'Real Madrid': 'ריאל מדריד',
+});
+
+const PLAYER_DISPLAY_NAMES = Object.freeze({
+  'Raúl Jiménez': 'ראול חימנס',
+  'Santiago Giménez': 'סנטיאגו חימנס',
+  'Hirving Lozano': 'אירווינג לוסאנו',
+  'Uriel Antuna': 'אוריאל אנטונה',
+  'César Huerta': 'ססאר הוארטה',
+  'Lyle Foster': 'לייל פוסטר',
+  'Evidence Makgopa': 'אווידנס מקגופה',
+  'Percy Tau': 'פרסי טאו',
+  'Mihlali Mayambela': 'מיחלאלי מאיימבלה',
+  'Zakhele Lepasa': 'זאחלה לפאסה',
+  'Son Heung-min': 'סון הונג-מין',
+  'Hwang Hee-chan': "הוואנג הי-צ'אן",
+  'Cho Gue-sung': "צ'ו גה-סונג",
+  'Lee Kang-in': 'לי קאנג-אין',
+  'Oh Hyeon-gyu': 'או היון-גיו',
+  'Patrik Schick': 'פטריק שיק',
+  'Tomáš Souček': "תומאש סוצ'ק",
+  'Adam Hložek': "אדם הלוז'ק",
+  'Pavel Šulc': 'פאבל שולץ',
+  'Václav Černý': "ואצלב צ'רני",
+  'Jonathan David': "ג'ונתן דייוויד",
+  'Cyle Larin': 'סייל לארין',
+  'Alphonso Davies': 'אלפונסו דייויס',
+  'Tajon Buchanan': "טאג'ון ביוקנן",
+  'Promise David': 'פרומיס דייוויד',
+  'Edin Džeko': "אדין דז'קו",
+  'Ermedin Demirović': "ארמדין דמירוביץ'",
+  'Amar Dedić': "אמאר דדיץ'",
+  'Smail Prevljak': 'סמייל פרבליאק',
+  'Luka Menalo': 'לוקה מנאלו',
+  'Almoez Ali': 'אלמועז עלי',
+  'Akram Afif': 'אכרם עפיף',
+  'Ahmed Alaaeldin': 'אחמד עלאא א-דין',
+  'Yusuf Abdurisag': 'יוסוף עבדוריסאג',
+  'Ahmed Fathy': 'אחמד פתחי',
+  'Breel Embolo': 'בריל אמבולו',
+  'Zeki Amdouni': 'זקי אמדוני',
+  'Dan Ndoye': 'דן נדויה',
+  'Noah Okafor': 'נואה אוקפור',
+  'Xherdan Shaqiri': 'שרדאן שאקירי',
+  'Vinícius Júnior': "ויניסיוס ז'וניור",
+  'Rodrygo': 'רודריגו',
+  'Endrick': 'אנדריק',
+  'Raphinha': 'ראפיניה',
+  'Richarlison': 'רישרליסון',
+  'Youssef En-Nesyri': 'יוסף אן-נסירי',
+  'Ayoub El Kaabi': 'איוב אל-כעבי',
+  'Hakim Ziyech': 'חכים זייש',
+  'Sofiane Rahimi': 'סופיאן רחימי',
+  'Abde Ezzalzouli': 'עבדה אזאלזולי',
+  'Duckens Nazon': 'דוקנס נאזון',
+  'Mondy Prunier': 'מונדי פרונייה',
+  'Frantzdy Pierrot': 'פראנצדי פיירו',
+  'Derrick Etienne': 'דריק אטיין',
+  'Louicius Don Deedson': 'לואיסיוס דון דידסון',
+  'Scott McTominay': 'סקוט מקטומיניי',
+  'Che Adams': "צ'ה אדמס",
+  'Lyndon Dykes': 'לינדון דייקס',
+  'Ryan Christie': 'ראיין כריסטי',
+  'Tommy Conway': 'טומי קונווי',
+  'Christian Pulisic': 'כריסטיאן פוליסיק',
+  'Folarin Balogun': 'פולרין באלוגון',
+  'Ricardo Pepi': 'ריקרדו פפי',
+  'Josh Sargent': "ג'וש סרג'נט",
+  'Tim Weah': 'טים ואה',
+  'Miguel Almirón': 'מיגל אלמירון',
+  'Antonio Sanabria': 'אנטוניו סנאבריה',
+  'Julio Enciso': 'חוליו אנסיסו',
+  'Ramon Sosa': 'רמון סוסה',
+  'Gabriel Ávalos': 'גבריאל אבלוס',
+  'Mitchell Duke': 'מיטשל דיוק',
+  'Kusini Yengi': 'קוסיני ינגי',
+  'Martin Boyle': 'מרטין בויל',
+  'Craig Goodwin': 'קרייג גודווין',
+  'Awer Mabil': 'אוור מאביל',
+  'Kenan Yıldız': 'קנאן ילדיז',
+  'Kerem Aktürkoğlu': 'כרם אקטורקולו',
+  'Hakan Çalhanoğlu': "האקן צ'להאנולו",
+  'Barış Alper Yılmaz': 'באריש אלפר ילמאז',
+  'Arda Güler': 'ארדה גולר',
+  'Kai Havertz': 'קאי האברץ',
+  'Jamal Musiala': "ג'מאל מוסיאלה",
+  'Florian Wirtz': 'פלוריאן וירץ',
+  'Niclas Füllkrug': 'ניקלאס פולקרוג',
+  'Deniz Undav': 'דניז אונדאב',
+  'Rangelo Janga': "רנג'לו יאנגה",
+  'Juninho Bacuna': "ז'וניניו בקונה",
+  'Leandro Bacuna': 'לאנדרו בקונה',
+  'Gervane Kastaneer': 'גרבאן קסטניר',
+  'Anthony van den Hurk': 'אנתוני ואן דן הורק',
+  'Sébastien Haller': 'סבסטיאן האלר',
+  'Simon Adingra': 'סימון אדינגרה',
+  'Nicolas Pépé': 'ניקולא פפה',
+  'Oumar Diakité': 'עומר דיאקיטה',
+  'Amad Diallo': 'אמאד דיאלו',
+  'Enner Valencia': 'אנר ולנסיה',
+  'Kevin Rodríguez': 'קווין רודריגס',
+  'Jeremy Sarmiento': "ג'רמי סרמיינטו",
+  'Kendry Páez': 'קנדרי פאאס',
+  'Gonzalo Plata': 'גונסאלו פלאטה',
+  'Memphis Depay': 'ממפיס דפאיי',
+  'Cody Gakpo': 'קודי גאקפו',
+  'Joshua Zirkzee': "ג'ושוע זירקזי",
+  'Donyell Malen': 'דונייל מאלן',
+  'Brian Brobbey': 'בריאן ברובי',
+  'Ayase Ueda': 'אייאסה אואדה',
+  'Kaoru Mitoma': 'קאורו מיטומה',
+  'Ritsu Dōan': 'ריטסו דואן',
+  'Takumi Minamino': 'טאקומי מינאמינו',
+  'Kyogo Furuhashi': 'קיוגו פורוהאשי',
+  'Alexander Isak': 'אלכסנדר איסאק',
+  'Viktor Gyökeres': 'ויקטור יוקרס',
+  'Dejan Kulusevski': 'דיאן קולוסבסקי',
+  'Anthony Elanga': 'אנתוני אלאנגה',
+  'Emil Forsberg': 'אמיל פורסברג',
+  'Youssef Msakni': 'יוסף מסאקני',
+  'Seifeddine Jaziri': "סייפדין ג'זירי",
+  'Montassar Talbi': 'מונטסר טלבי',
+  'Elias Achouri': 'אליאס אשורי',
+  'Taha Yassine Khenissi': 'טהא יסין חניסי',
+  'Romelu Lukaku': 'רומלו לוקאקו',
+  'Loïs Openda': 'לואיס אופנדה',
+  'Jérémy Doku': "ז'רמי דוקו",
+  'Charles De Ketelaere': 'שארל דה קטלארה',
+  'Leandro Trossard': 'לאנדרו טרוסאר',
+  'Mohamed Salah': 'מוחמד סלאח',
+  'Mostafa Mohamed': 'מוסטפא מוחמד',
+  'Omar Marmoush': 'עומר מרמוש',
+  'Trézéguet': 'טרזגה',
+  'Ibrahim Adel': 'איברהים עאדל',
+  'Mehdi Taremi': 'מהדי טארמי',
+  'Sardar Azmoun': 'סרדאר אזמון',
+  'Alireza Jahanbakhsh': "עלירזא ג'האנבחש",
+  'Mehdi Ghayedi': 'מהדי קאיידי',
+  'Mohammad Mohebi': 'מוחמד מוחבי',
+  'Chris Wood': 'כריס ווד',
+  'Ben Waine': 'בן ויין',
+  'Kosta Barbarouses': 'קוסטה ברברוסס',
+  'Matthew Garbett': 'מתיו גארבט',
+  'Sarpreet Singh': 'סרפריט סינג',
+  'Álvaro Morata': 'אלברו מוראטה',
+  'Lamine Yamal': 'לאמין ימאל',
+  'Nico Williams': 'ניקו וויליאמס',
+  'Dani Olmo': 'דני אולמו',
+  'Ferran Torres': 'פראן טורס',
+  'Bebé': 'בבה',
+  'Ryan Mendes': 'ראיין מנדש',
+  'Willy Semedo': 'וילי סמדו',
+  'Benchimol': 'בנשימול',
+  'Dailon Rocha Livramento': 'דיילון רושה ליברמנטו',
+  'Firas Al-Buraikan': 'פיראס אל-בורייקאן',
+  'Saleh Al-Shehri': 'סאלח א-שהרי',
+  'Salem Al-Dawsari': 'סאלם א-דאוסרי',
+  'Abdullah Radif': 'עבדאללה רדיף',
+  'Ayman Yahya': 'אימן יחיא',
+  'Darwin Núñez': 'דרווין נונייס',
+  'Facundo Pellistri': 'פקונדו פליסטרי',
+  'Maximiliano Araújo': 'מקסימיליאנו אראוחו',
+  'Federico Viñas': 'פדריקו ויניאס',
+  'Luis Suárez': 'לואיס סוארס',
+  'Kylian Mbappé': 'קיליאן אמבפה',
+  'Ousmane Dembélé': 'עוסמאן דמבלה',
+  'Marcus Thuram': 'מרקוס תוראם',
+  'Randal Kolo Muani': 'רנדאל קולו מואני',
+  'Bradley Barcola': 'בראדלי ברקולה',
+  'Sadio Mané': 'סאדיו מאנה',
+  'Nicolas Jackson': "ניקולס ג'קסון",
+  'Boulaye Dia': 'בולאייה דיה',
+  'Habib Diallo': 'חביב דיאלו',
+  'Ismaïla Sarr': 'איסמאילה סאר',
+  'Aymen Hussein': 'אימן חוסיין',
+  'Mohanad Ali': 'מוהנד עלי',
+  'Ali Jasim': "עלי ג'סים",
+  'Ibrahim Bayesh': 'איברהים באייש',
+  'Zaid Tahseen': 'זייד תחסין',
+  'Erling Haaland': 'ארלינג הולאנד',
+  'Alexander Sørloth': 'אלכסנדר סורלות',
+  'Jørgen Strand Larsen': 'יורגן סטרנד לארסן',
+  'Antonio Nusa': 'אנטוניו נוסה',
+  'Oscar Bobb': 'אוסקר בוב',
+  'Lautaro Martínez': 'לאוטרו מרטינס',
+  'Julián Álvarez': 'חוליאן אלברס',
+  'Lionel Messi': 'ליונל מסי',
+  'Alejandro Garnacho': "אלחנדרו גרנאצ'ו",
+  'Nicolás González': 'ניקולס גונסאלס',
+  'Riyad Mahrez': 'ריאד מאחרז',
+  'Baghdad Bounedjah': "בגדאד בונדז'ה",
+  'Amine Gouiri': 'אמין גואירי',
+  'Saïd Benrahma': 'סעיד בן רחמה',
+  'Mohamed Amoura': 'מוחמד אמורה',
+  'Michael Gregoritsch': "מיכאל גרגוריץ'",
+  'Marko Arnautović': "מרקו ארנאוטוביץ'",
+  'Christoph Baumgartner': 'כריסטוף באומגרטנר',
+  'Marcel Sabitzer': 'מרסל זביצר',
+  'Konrad Laimer': 'קונרד ליימר',
+  'Mousa Al-Tamari': 'מוסא א-תעמרי',
+  'Yazan Al-Naimat': 'יאזן א-נעימאת',
+  'Ali Olwan': 'עלי אולוואן',
+  'Mahmoud Al-Mardi': 'מחמוד א-מרדי',
+  'Yousef Abu Jalboush': "יוסף אבו ג'לבוש",
+  'Cristiano Ronaldo': 'כריסטיאנו רונאלדו',
+  'Rafael Leão': 'רפאל לאאו',
+  'Gonçalo Ramos': 'גונסאלו ראמוש',
+  'Diogo Jota': "דיוגו ז'וטה",
+  'João Félix': "ז'ואאו פליקס",
+  'Yoane Wissa': 'יואן ויסה',
+  'Cédric Bakambu': 'סדריק בקאמבו',
+  'Simon Banza': 'סימון בנזה',
+  'Meschack Elia': 'משאק אליה',
+  'Théo Bongonda': 'תאו בונגונדה',
+  'Eldor Shomurodov': 'אלדור שומורודוב',
+  'Abbosbek Fayzullaev': 'עבאסבק פייזולאייב',
+  'Oston Urunov': 'אוסטון אורונוב',
+  'Jaloliddin Masharipov': "ג'לולידין משאריפוב",
+  'Bobur Abdixolikov': 'בובור אבדיחוליקוב',
+  'Luis Díaz': 'לואיס דיאס',
+  'Jhon Durán': "ג'ון דוראן",
+  'Rafael Santos Borré': 'רפאל סנטוס בורה',
+  'Luis Sinisterra': 'לואיס סיניסטרה',
+  'James Rodríguez': 'חאמס רודריגס',
+  'Harry Kane': 'הארי קיין',
+  'Bukayo Saka': 'בוקאיו סאקה',
+  'Jude Bellingham': "ג'וד בלינגהאם",
+  'Ollie Watkins': 'אולי ווטקינס',
+  'Cole Palmer': 'קול פאלמר',
+  'Andrej Kramarić': "אנדריי קרמאריץ'",
+  'Bruno Petković': "ברונו פטקוביץ'",
+  'Ante Budimir': 'אנטה בודימיר',
+  'Lovro Majer': 'לוברו מאייר',
+  'Ivan Perišić': "איבן פרישיץ'",
+  'Mohammed Kudus': 'מוחמד קודוס',
+  'Jordan Ayew': "ג'ורדן אייוו",
+  'Inaki Williams': 'איניאקי וויליאמס',
+  'Ernest Nuamah': 'ארנסט נואמה',
+  'Antoine Semenyo': 'אנטואן סמניו',
+  'José Fajardo': 'חוסה פחרדו',
+  'Ismael Díaz': 'איסמאיל דיאס',
+  'Édgar Bárcenas': 'אדגר ברסנס',
+  'Cecilio Waterman': 'ססיליו ווטרמן',
+  'Yoel Bárcenas': 'יואל ברסנס',
+});
+
+const TEAM_NAME_ALIASES = new Map(Object.entries({
+  'unitedstates': 'usa',
+  'unitedstatesofamerica': 'usa',
+  'usmnt': 'usa',
+  'southkorea': 'korearepublic',
+  'republicofkorea': 'korearepublic',
+  'iran': 'iriran',
+  'ivorycoast': 'cotedivoire',
+  'capeverde': 'caboverde',
+  'drcongo': 'congodr',
+  'democraticrepublicofthecongo': 'congodr',
+  'bosniaherzegovina': 'bosniaandherzegovina',
+  'bosniaandherzegovina': 'bosniaandherzegovina',
+  'turkey': 'turkiye',
+  'czechrepublic': 'czechia',
+  'arsenalfc': 'arsenal',
+  'sportinglisbon': 'sportingcp',
+  'sportingclubdeportugal': 'sportingcp',
+  'fcbayernmunich': 'bayernmunchen',
+  'fcbayernmunchen': 'bayernmunchen',
+  'realmadridcf': 'realmadrid',
+}));
+
+function localizeTeamName(name) {
+  return TEAM_DISPLAY_NAMES[name] || name;
+}
+
+function localizePlayerName(name) {
+  return PLAYER_DISPLAY_NAMES[name] || name;
+}
+
+function placeholderDisplayName(label) {
+  const winner = /^1([A-L])$/u.exec(label);
+  if (winner) return `מקום 1 בבית ${winner[1]}`;
+  const runnerUp = /^2([A-L])$/u.exec(label);
+  if (runnerUp) return `מקום 2 בבית ${runnerUp[1]}`;
+  const bestThird = /^3\/4([A-L])$/u.exec(label);
+  if (bestThird) return `מקום 3/4 בבית ${bestThird[1]}`;
+  const winnerMatch = /^Winner (wc-match-\d+)$/u.exec(label);
+  if (winnerMatch) return `מנצחת ${winnerMatch[1]}`;
+  const loserMatch = /^Loser (wc-match-\d+)$/u.exec(label);
+  if (loserMatch) return `מפסידת ${loserMatch[1]}`;
+  return localizeTeamName(label);
+}
+
+function makeTeam(name, extra = {}) {
+  return { id: teamId(name), name, displayName: localizeTeamName(name), ...extra };
+}
+
+function makePlaceholderTeam(name, extra = {}) {
+  return { id: teamId(name), name, displayName: placeholderDisplayName(name), placeholder: true, ...extra };
+}
+
 function teamId(label) {
   return label
     .toLowerCase()
@@ -71,7 +423,7 @@ function slug(input) {
 }
 
 function normalizeTeamName(input) {
-  return String(input || '')
+  const normalized = String(input || '')
     .toLowerCase()
     .normalize('NFKD')
     .replace(/[^a-z0-9]+/g, '')
@@ -79,8 +431,8 @@ function normalizeTeamName(input) {
     .replace(/saintgermain/g, 'psg')
     .replace(/sportingcp/g, 'sporting')
     .replace(/iriran/g, 'iran')
-    .replace(/korearepublic/g, 'korearepublic')
     .trim();
+  return TEAM_NAME_ALIASES.get(normalized) || normalized;
 }
 
 function nowIso() {
@@ -254,26 +606,28 @@ function seedUsers() {
 
 function buildWorldCupGroups() {
   return [
-    ['A', ['Mexico', 'South Africa', 'Korea Republic', 'Czechia/Denmark/North Macedonia/Republic of Ireland']],
-    ['B', ['Canada', 'Bosnia and Herzegovina/Italy/Northern Ireland/Wales', 'Qatar', 'Switzerland']],
+    ['A', ['Mexico', 'South Africa', 'Korea Republic', 'Czechia']],
+    ['B', ['Canada', 'Bosnia and Herzegovina', 'Qatar', 'Switzerland']],
     ['C', ['Brazil', 'Morocco', 'Haiti', 'Scotland']],
-    ['D', ['USA', 'Paraguay', 'Australia', 'Kosovo/Romania/Slovakia/Türkiye']],
-    ['E', ['Germany', 'Curaçao', 'Côte d\'Ivoire', 'Ecuador']],
-    ['F', ['Netherlands', 'Japan', 'Albania/Poland/Sweden/Ukraine', 'Tunisia']],
+    ['D', ['USA', 'Paraguay', 'Australia', 'Türkiye']],
+    ['E', ['Germany', 'Curaçao', "Côte d'Ivoire", 'Ecuador']],
+    ['F', ['Netherlands', 'Japan', 'Sweden', 'Tunisia']],
     ['G', ['Belgium', 'Egypt', 'IR Iran', 'New Zealand']],
     ['H', ['Spain', 'Cabo Verde', 'Saudi Arabia', 'Uruguay']],
-    ['I', ['France', 'Senegal', 'Bolivia/Iraq/Suriname', 'Norway']],
+    ['I', ['France', 'Senegal', 'Iraq', 'Norway']],
     ['J', ['Argentina', 'Algeria', 'Austria', 'Jordan']],
-    ['K', ['Portugal', 'Congo DR/Jamaica/New Caledonia', 'Uzbekistan', 'Colombia']],
+    ['K', ['Portugal', 'Congo DR', 'Uzbekistan', 'Colombia']],
     ['L', ['England', 'Croatia', 'Ghana', 'Panama']],
-  ].map(([id, teams]) => ({ id, teams: teams.map((name) => ({ id: teamId(name), name })) }));
+  ].map(([id, teams]) => ({ id, teams: teams.map((name) => makeTeam(name)) }));
 }
 
 const scorerSeedMap = {
   'Mexico': ['Raúl Jiménez', 'Santiago Giménez', 'Hirving Lozano', 'Uriel Antuna', 'César Huerta'],
   'South Africa': ['Lyle Foster', 'Evidence Makgopa', 'Percy Tau', 'Mihlali Mayambela', 'Zakhele Lepasa'],
   'Korea Republic': ['Son Heung-min', 'Hwang Hee-chan', 'Cho Gue-sung', 'Lee Kang-in', 'Oh Hyeon-gyu'],
+  'Czechia': ['Patrik Schick', 'Tomáš Souček', 'Adam Hložek', 'Pavel Šulc', 'Václav Černý'],
   'Canada': ['Jonathan David', 'Cyle Larin', 'Alphonso Davies', 'Tajon Buchanan', 'Promise David'],
+  'Bosnia and Herzegovina': ['Edin Džeko', 'Ermedin Demirović', 'Amar Dedić', 'Smail Prevljak', 'Luka Menalo'],
   'Qatar': ['Almoez Ali', 'Akram Afif', 'Ahmed Alaaeldin', 'Yusuf Abdurisag', 'Ahmed Fathy'],
   'Switzerland': ['Breel Embolo', 'Zeki Amdouni', 'Dan Ndoye', 'Noah Okafor', 'Xherdan Shaqiri'],
   'Brazil': ['Vinícius Júnior', 'Rodrygo', 'Endrick', 'Raphinha', 'Richarlison'],
@@ -283,12 +637,14 @@ const scorerSeedMap = {
   'USA': ['Christian Pulisic', 'Folarin Balogun', 'Ricardo Pepi', 'Josh Sargent', 'Tim Weah'],
   'Paraguay': ['Miguel Almirón', 'Antonio Sanabria', 'Julio Enciso', 'Ramon Sosa', 'Gabriel Ávalos'],
   'Australia': ['Mitchell Duke', 'Kusini Yengi', 'Martin Boyle', 'Craig Goodwin', 'Awer Mabil'],
+  'Türkiye': ['Kenan Yıldız', 'Kerem Aktürkoğlu', 'Hakan Çalhanoğlu', 'Barış Alper Yılmaz', 'Arda Güler'],
   'Germany': ['Kai Havertz', 'Jamal Musiala', 'Florian Wirtz', 'Niclas Füllkrug', 'Deniz Undav'],
   'Curaçao': ['Rangelo Janga', 'Juninho Bacuna', 'Leandro Bacuna', 'Gervane Kastaneer', 'Anthony van den Hurk'],
-  'Côte d\'Ivoire': ['Sébastien Haller', 'Simon Adingra', 'Nicolas Pépé', 'Oumar Diakité', 'Amad Diallo'],
+  "Côte d'Ivoire": ['Sébastien Haller', 'Simon Adingra', 'Nicolas Pépé', 'Oumar Diakité', 'Amad Diallo'],
   'Ecuador': ['Enner Valencia', 'Kevin Rodríguez', 'Jeremy Sarmiento', 'Kendry Páez', 'Gonzalo Plata'],
   'Netherlands': ['Memphis Depay', 'Cody Gakpo', 'Joshua Zirkzee', 'Donyell Malen', 'Brian Brobbey'],
   'Japan': ['Ayase Ueda', 'Kaoru Mitoma', 'Ritsu Dōan', 'Takumi Minamino', 'Kyogo Furuhashi'],
+  'Sweden': ['Alexander Isak', 'Viktor Gyökeres', 'Dejan Kulusevski', 'Anthony Elanga', 'Emil Forsberg'],
   'Tunisia': ['Youssef Msakni', 'Seifeddine Jaziri', 'Montassar Talbi', 'Elias Achouri', 'Taha Yassine Khenissi'],
   'Belgium': ['Romelu Lukaku', 'Loïs Openda', 'Jérémy Doku', 'Charles De Ketelaere', 'Leandro Trossard'],
   'Egypt': ['Mohamed Salah', 'Mostafa Mohamed', 'Omar Marmoush', 'Trézéguet', 'Ibrahim Adel'],
@@ -300,24 +656,20 @@ const scorerSeedMap = {
   'Uruguay': ['Darwin Núñez', 'Facundo Pellistri', 'Maximiliano Araújo', 'Federico Viñas', 'Luis Suárez'],
   'France': ['Kylian Mbappé', 'Ousmane Dembélé', 'Marcus Thuram', 'Randal Kolo Muani', 'Bradley Barcola'],
   'Senegal': ['Sadio Mané', 'Nicolas Jackson', 'Boulaye Dia', 'Habib Diallo', 'Ismaïla Sarr'],
+  'Iraq': ['Aymen Hussein', 'Mohanad Ali', 'Ali Jasim', 'Ibrahim Bayesh', 'Zaid Tahseen'],
   'Norway': ['Erling Haaland', 'Alexander Sørloth', 'Jørgen Strand Larsen', 'Antonio Nusa', 'Oscar Bobb'],
   'Argentina': ['Lautaro Martínez', 'Julián Álvarez', 'Lionel Messi', 'Alejandro Garnacho', 'Nicolás González'],
   'Algeria': ['Riyad Mahrez', 'Baghdad Bounedjah', 'Amine Gouiri', 'Saïd Benrahma', 'Mohamed Amoura'],
   'Austria': ['Michael Gregoritsch', 'Marko Arnautović', 'Christoph Baumgartner', 'Marcel Sabitzer', 'Konrad Laimer'],
   'Jordan': ['Mousa Al-Tamari', 'Yazan Al-Naimat', 'Ali Olwan', 'Mahmoud Al-Mardi', 'Yousef Abu Jalboush'],
   'Portugal': ['Cristiano Ronaldo', 'Rafael Leão', 'Gonçalo Ramos', 'Diogo Jota', 'João Félix'],
+  'Congo DR': ['Yoane Wissa', 'Cédric Bakambu', 'Simon Banza', 'Meschack Elia', 'Théo Bongonda'],
   'Uzbekistan': ['Eldor Shomurodov', 'Abbosbek Fayzullaev', 'Oston Urunov', 'Jaloliddin Masharipov', 'Bobur Abdixolikov'],
   'Colombia': ['Luis Díaz', 'Jhon Durán', 'Rafael Santos Borré', 'Luis Sinisterra', 'James Rodríguez'],
   'England': ['Harry Kane', 'Bukayo Saka', 'Jude Bellingham', 'Ollie Watkins', 'Cole Palmer'],
   'Croatia': ['Andrej Kramarić', 'Bruno Petković', 'Ante Budimir', 'Lovro Majer', 'Ivan Perišić'],
   'Ghana': ['Mohammed Kudus', 'Jordan Ayew', 'Inaki Williams', 'Ernest Nuamah', 'Antoine Semenyo'],
   'Panama': ['José Fajardo', 'Ismael Díaz', 'Édgar Bárcenas', 'Cecilio Waterman', 'Yoel Bárcenas'],
-  'Bosnia and Herzegovina/Italy/Northern Ireland/Wales': ['Mateo Retegui', 'Federico Chiesa', 'Edin Džeko', 'Brennan Johnson', 'Dion Charles'],
-  'Czechia/Denmark/North Macedonia/Republic of Ireland': ['Rasmus Højlund', 'Patrik Schick', 'Bojan Miovski', 'Evan Ferguson', 'Jonas Wind'],
-  'Kosovo/Romania/Slovakia/Türkiye': ['Vedat Muriqi', 'Denis Drăguș', 'Robert Boženík', 'Kenan Yıldız', 'Kerem Aktürkoğlu'],
-  'Albania/Poland/Sweden/Ukraine': ['Robert Lewandowski', 'Viktor Gyökeres', 'Artem Dovbyk', 'Armando Broja', 'Dejan Kulusevski'],
-  'Bolivia/Iraq/Suriname': ['Miguel Terceros', 'Aymen Hussein', 'Sheraldo Becker', 'Yomar Rocha', 'Ali Jasim'],
-  'Congo DR/Jamaica/New Caledonia': ['Yoane Wissa', 'Michy Batshuayi', 'Leon Bailey', 'Shamar Nicholson', 'Georges Gope-Fenepej'],
 };
 
 function buildTopScorerOptions(groups) {
@@ -332,10 +684,16 @@ function buildTopScorerOptions(groups) {
       `בועט חופשי - ${name}`,
     ];
     for (const playerName of list.slice(0, 5)) {
-      options.push({ id: `${teamId(name)}::${slug(playerName)}`, label: playerName, teamName: name });
+      options.push({
+        id: `${teamId(name)}::${slug(playerName)}`,
+        label: playerName,
+        displayLabel: localizePlayerName(playerName),
+        teamName: name,
+        teamDisplayName: localizeTeamName(name),
+      });
     }
   }
-  options.push({ id: 'other', label: 'אחר (20 נק׳ אם מלך השערים לא ברשימה)', teamName: 'כללי' });
+  options.push({ id: 'other', label: 'Other', displayLabel: 'אחר (20 נק׳ אם מלך השערים לא ברשימה)', teamName: 'כללי', teamDisplayName: 'כללי' });
   return options;
 }
 
@@ -427,8 +785,8 @@ function buildWorldCupCompetition() {
         stageLabel: STAGE_LABELS[template.stage],
         stageOrder: 10 + templateIndex,
         roundLabel: template.stage === 'round32' ? `32 האחרונות - משחק ${i + 1}` : `${STAGE_LABELS[template.stage]} - משחק ${i + 1}`,
-        homeTeam: { id: teamId(homeLabel), name: homeLabel, placeholder: true },
-        awayTeam: { id: teamId(awayLabel), name: awayLabel, placeholder: true },
+        homeTeam: makePlaceholderTeam(homeLabel),
+        awayTeam: makePlaceholderTeam(awayLabel),
         kickoffAt: kickoff.toISOString(),
         venue: `Knockout Stadium ${i + 1}`,
       });
@@ -447,8 +805,8 @@ function buildWorldCupCompetition() {
     stageLabel: STAGE_LABELS.thirdPlace,
     stageOrder: 14,
     roundLabel: STAGE_LABELS.thirdPlace,
-    homeTeam: { id: 'loser-semi-1', name: 'Loser wc-match-101', placeholder: true },
-    awayTeam: { id: 'loser-semi-2', name: 'Loser wc-match-102', placeholder: true },
+    homeTeam: makePlaceholderTeam('Loser wc-match-101', { id: 'loser-semi-1' }),
+    awayTeam: makePlaceholderTeam('Loser wc-match-102', { id: 'loser-semi-2' }),
     kickoffAt: thirdPlaceKickoff,
     venue: 'Bronze Match Stadium',
   });
@@ -461,14 +819,14 @@ function buildWorldCupCompetition() {
     stageLabel: STAGE_LABELS.final,
     stageOrder: 15,
     roundLabel: STAGE_LABELS.final,
-    homeTeam: { id: 'winner-semi-1', name: 'Winner wc-match-101', placeholder: true },
-    awayTeam: { id: 'winner-semi-2', name: 'Winner wc-match-102', placeholder: true },
+    homeTeam: makePlaceholderTeam('Winner wc-match-101', { id: 'winner-semi-1' }),
+    awayTeam: makePlaceholderTeam('Winner wc-match-102', { id: 'winner-semi-2' }),
     kickoffAt: '2026-07-19T18:00:00Z',
     venue: 'New York New Jersey Stadium',
   });
 
   const topScorerOptions = buildTopScorerOptions(groups);
-  const winnerOptions = groups.flatMap((group) => group.teams).map((team) => ({ id: team.id, label: team.name }));
+  const winnerOptions = groups.flatMap((group) => group.teams).map((team) => ({ id: team.id, label: team.name, displayLabel: team.displayName || team.name }));
 
   return {
     id: 'worldcup2026',
@@ -499,8 +857,8 @@ function buildTrialCompetition() {
       stageLabel: 'צ׳מפיונס - רבע גמר',
       stageOrder: 1,
       roundLabel: 'רבע גמר - משחק 1',
-      homeTeam: { id: teamId('Arsenal'), name: 'Arsenal' },
-      awayTeam: { id: teamId('Sporting CP'), name: 'Sporting CP' },
+      homeTeam: makeTeam('Arsenal'),
+      awayTeam: makeTeam('Sporting CP'),
       kickoffAt: '2026-04-15T19:00:00Z',
       venue: 'Arsenal Stadium, London',
     },
@@ -512,8 +870,8 @@ function buildTrialCompetition() {
       stageLabel: 'צ׳מפיונס - רבע גמר',
       stageOrder: 1,
       roundLabel: 'רבע גמר - משחק 2',
-      homeTeam: { id: teamId('Bayern München'), name: 'Bayern München' },
-      awayTeam: { id: teamId('Real Madrid'), name: 'Real Madrid' },
+      homeTeam: makeTeam('Bayern München'),
+      awayTeam: makeTeam('Real Madrid'),
       kickoffAt: '2026-04-15T19:00:00Z',
       venue: 'Football Arena Munich',
     },
@@ -1386,8 +1744,7 @@ function routeStatic(reqUrl) {
     }
   });
 
-  server.listen(port, '0.0.0.0', () => {
-    console.log(`World Cup Predictor v4 listening on 0.0.0.0:${port}`);
-    console.log(`Public base URL: ${defaultPublicBaseUrl}`);
+  server.listen(port, () => {
+    console.log(`World Cup Predictor v4 listening on ${defaultPublicBaseUrl}`);
   });
 })();
