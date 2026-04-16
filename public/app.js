@@ -116,6 +116,18 @@
     return String(input || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   }
 
+  function teamDisplayName(team) {
+    return team?.displayName || team?.name || '';
+  }
+
+  function optionDisplayLabel(option) {
+    return option?.displayLabel || option?.label || '';
+  }
+
+  function optionTeamDisplayName(option) {
+    return option?.teamDisplayName || option?.teamName || '';
+  }
+
   function getTabs() {
     if (!state.bootstrap) return [];
     const me = state.bootstrap.me;
@@ -161,7 +173,7 @@
     app.innerHTML = `
       <div class="login-wrap">
         <div class="login-card">
-          <span class="badge">גרסת development v4</span>
+          <span class="badge">גרסת development v4.3</span>
           <h1>ליגת הניחושים</h1>
           <p class="muted">כניסה פרטית לפי שם משתמש וסיסמה. המסך של שחקן והמסך של אדמין מופרדים, ואין חשיפה של שמות משתמש וסיסמאות של אחרים.</p>
           ${extraInfo ? `<div class="notice warning" style="margin:12px 0;">${escapeHtml(extraInfo)}</div>` : ''}
@@ -387,7 +399,7 @@
       <div class="card">
         <div class="match-header">
           <div>
-            <h3 style="margin-bottom:6px;">${escapeHtml(match.homeTeam.name)} - ${escapeHtml(match.awayTeam.name)}</h3>
+            <h3 style="margin-bottom:6px;">${escapeHtml(teamDisplayName(match.homeTeam))} - ${escapeHtml(teamDisplayName(match.awayTeam))}</h3>
             <div class="muted">${escapeHtml(match.stageLabel)}${match.groupId ? ` | בית ${escapeHtml(match.groupId)}` : ''} | ${escapeHtml(match.roundLabel)}</div>
           </div>
           <div>${liveBadge}</div>
@@ -400,10 +412,10 @@
         ${scoreState.status !== 'NS' ? `<div class="notice" style="margin-top:12px;">סטטוס: ${escapeHtml(scoreState.statusLabel)}${scoreState.currentHome != null ? ` | תוצאה נוכחית ${scoreState.currentHome}:${scoreState.currentAway}` : ''}</div>` : ''}
         <form class="prediction-form grid" data-match-id="${match.id}" style="margin-top:14px;">
           <div class="score-inputs">
-            <div>${escapeHtml(match.homeTeam.name)}</div>
+            <div>${escapeHtml(teamDisplayName(match.homeTeam))}</div>
             <input name="home" type="number" min="0" max="20" value="${my.home ?? ''}" ${match.isLocked ? 'disabled' : ''} />
             <input name="away" type="number" min="0" max="20" value="${my.away ?? ''}" ${match.isLocked ? 'disabled' : ''} />
-            <div>${escapeHtml(match.awayTeam.name)}</div>
+            <div>${escapeHtml(teamDisplayName(match.awayTeam))}</div>
           </div>
           <div class="actions-row">
             <button type="submit" ${match.isLocked ? 'disabled' : ''}>שמור ניחוש</button>
@@ -439,14 +451,14 @@
                   <div class="muted" style="margin-bottom:6px;">זוכה בטורניר</div>
                   <select name="winnerTeamId">
                     <option value="">בחר נבחרת</option>
-                    ${competition.winnerOptions.map((option) => `<option value="${escapeHtml(option.id)}" ${bonus.winnerTeamId === option.id ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('')}
+                    ${competition.winnerOptions.map((option) => `<option value="${escapeHtml(option.id)}" ${bonus.winnerTeamId === option.id ? 'selected' : ''}>${escapeHtml(optionDisplayLabel(option))}</option>`).join('')}
                   </select>
                 </label>
                 <label>
                   <div class="muted" style="margin-bottom:6px;">מלך שערים</div>
                   <select name="topScorerChoiceId">
                     <option value="">בחר שחקן</option>
-                    ${competition.topScorerOptions.map((option) => `<option value="${escapeHtml(option.id)}" ${bonus.topScorerChoiceId === option.id ? 'selected' : ''}>${escapeHtml(option.label)}${option.teamName && option.teamName !== 'כללי' ? ` · ${escapeHtml(option.teamName)}` : ''}</option>`).join('')}
+                    ${competition.topScorerOptions.map((option) => `<option value="${escapeHtml(option.id)}" ${bonus.topScorerChoiceId === option.id ? 'selected' : ''}>${escapeHtml(optionDisplayLabel(option))}${optionTeamDisplayName(option) && optionTeamDisplayName(option) !== 'כללי' ? ` · ${escapeHtml(optionTeamDisplayName(option))}` : ''}</option>`).join('')}
                   </select>
                 </label>
               </div>
@@ -515,7 +527,7 @@
             <div class="card">
               <div class="match-header">
                 <div>
-                  <h3 style="margin-bottom:6px;">${escapeHtml(match.homeTeam.name)} - ${escapeHtml(match.awayTeam.name)}</h3>
+                  <h3 style="margin-bottom:6px;">${escapeHtml(teamDisplayName(match.homeTeam))} - ${escapeHtml(teamDisplayName(match.awayTeam))}</h3>
                   <div class="muted">${escapeHtml(match.stageLabel)}${match.groupId ? ` | בית ${escapeHtml(match.groupId)}` : ''} | ${escapeHtml(formatDate(match.kickoffAt))}</div>
                 </div>
                 <div>
@@ -663,14 +675,14 @@
                 <div class="muted" style="margin-bottom:6px;">זוכה בפועל</div>
                 <select name="winnerTeamId">
                   <option value="">בחר נבחרת</option>
-                  ${competition.winnerOptions.map((item) => `<option value="${escapeHtml(item.id)}" ${currentActual.winnerTeamId === item.id ? 'selected' : ''}>${escapeHtml(item.label)}</option>`).join('')}
+                  ${competition.winnerOptions.map((item) => `<option value="${escapeHtml(item.id)}" ${currentActual.winnerTeamId === item.id ? 'selected' : ''}>${escapeHtml(optionDisplayLabel(item))}</option>`).join('')}
                 </select>
               </label>
               <label>
                 <div class="muted" style="margin-bottom:6px;">מלך שערים - בחירה</div>
                 <select name="topScorerChoiceId">
                   <option value="">בחר שחקן</option>
-                  ${competition.topScorerOptions.map((item) => `<option value="${escapeHtml(item.id)}" ${currentActual.topScorerChoiceId === item.id ? 'selected' : ''}>${escapeHtml(item.label)}</option>`).join('')}
+                  ${competition.topScorerOptions.map((item) => `<option value="${escapeHtml(item.id)}" ${currentActual.topScorerChoiceId === item.id ? 'selected' : ''}>${escapeHtml(optionDisplayLabel(item))}</option>`).join('')}
                 </select>
               </label>
             </div>
@@ -686,7 +698,7 @@
           <form id="manual-result-form" class="grid">
             <label>
               <div class="muted" style="margin-bottom:6px;">משחק</div>
-              <select name="matchId">${competition.matches.map((match) => `<option value="${match.id}">${escapeHtml(match.homeTeam.name)} - ${escapeHtml(match.awayTeam.name)} | ${escapeHtml(match.roundLabel)}</option>`).join('')}</select>
+              <select name="matchId">${competition.matches.map((match) => `<option value="${match.id}">${escapeHtml(teamDisplayName(match.homeTeam))} - ${escapeHtml(teamDisplayName(match.awayTeam))} | ${escapeHtml(match.roundLabel)}</option>`).join('')}</select>
             </label>
             <div class="form-row">
               <label><div class="muted" style="margin-bottom:6px;">תוצאת 90 - בית</div><input name="home90" type="number" min="0" required /></label>
@@ -831,7 +843,7 @@
     if (!('Notification' in window)) return;
     const key = `notified:${state.bootstrap.me.id}:${match.id}`;
     if (storage.get(key)) return;
-    const title = `${match.homeTeam.name} - ${match.awayTeam.name}`;
+    const title = `${teamDisplayName(match.homeTeam)} - ${teamDisplayName(match.awayTeam)}`;
     const body = `עוד פחות משעה למשחק. אפשר עדיין לנחש עד שתי דקות לפני הפתיחה.`;
     try {
       if (navigator.serviceWorker?.getRegistration) {
