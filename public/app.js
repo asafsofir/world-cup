@@ -128,6 +128,83 @@
     return option?.teamDisplayName || option?.teamName || '';
   }
 
+  function optionTeamFlag(option) {
+    return option?.teamFlag || option?.flag || '';
+  }
+
+  function teamFlag(team) {
+    return team?.flag || '';
+  }
+
+  function compareDisplay(a, b) {
+    return String(a || '').localeCompare(String(b || ''), 'he');
+  }
+
+  function sortWinnerOptions(options) {
+    return (options || []).slice().sort((a, b) => compareDisplay(optionDisplayLabel(a), optionDisplayLabel(b)));
+  }
+
+  function sortTopScorerOptions(options) {
+    return (options || []).slice().sort((a, b) => {
+      if (a?.id === 'other') return 1;
+      if (b?.id === 'other') return -1;
+      const teamCmp = compareDisplay(optionTeamDisplayName(a), optionTeamDisplayName(b));
+      if (teamCmp !== 0) return teamCmp;
+      return compareDisplay(optionDisplayLabel(a), optionDisplayLabel(b));
+    });
+  }
+
+  function renderFlag(flag) {
+    return flag ? `<span class="flag-emoji" aria-hidden="true">${escapeHtml(flag)}</span>` : '';
+  }
+
+  function renderTeamPill(team, className = '') {
+    const classes = ['team-pill'];
+    if (className) classes.push(className);
+    if (team?.placeholder) classes.push('placeholder');
+    return `<span class="${classes.join(' ')}">${renderFlag(teamFlag(team))}<span>${escapeHtml(teamDisplayName(team))}</span></span>`;
+  }
+
+  function renderTeamOption(option) {
+    const flag = optionTeamFlag(option);
+    return `${flag ? `${flag} ` : ''}${optionDisplayLabel(option)}`;
+  }
+
+  function renderWinnerOptionsMarkup(options, selectedId) {
+    return sortWinnerOptions(options).map((option) => `<option value="${escapeHtml(option.id)}" ${selectedId === option.id ? 'selected' : ''}>${escapeHtml(renderTeamOption(option))}</option>`).join('');
+  }
+
+  function renderTopScorerOptionsMarkup(options, selectedId) {
+    const sorted = sortTopScorerOptions(options);
+    const groups = [];
+    let current = null;
+    for (const option of sorted) {
+      if (option.id === 'other') continue;
+      const key = optionTeamDisplayName(option);
+      if (!current || current.key !== key) {
+        current = { key, label: `${optionTeamFlag(option) ? `${optionTeamFlag(option)} ` : ''}${key}`, options: [] };
+        groups.push(current);
+      }
+      current.options.push(option);
+    }
+    const markup = groups.map((group) => `
+      <optgroup label="${escapeHtml(group.label)}">
+        ${group.options.map((option) => `<option value="${escapeHtml(option.id)}" ${selectedId === option.id ? 'selected' : ''}>${escapeHtml(optionDisplayLabel(option))}</option>`).join('')}
+      </optgroup>`).join('');
+    const other = sorted.find((option) => option.id === 'other');
+    return `${markup}${other ? `<option value="${escapeHtml(other.id)}" ${selectedId === other.id ? 'selected' : ''}>${escapeHtml(optionDisplayLabel(other))}</option>` : ''}`;
+  }
+
+  function renderMatchupHeader(match, compact = false) {
+    return `
+      <div class="matchup ${compact ? 'compact' : ''}">
+        <div class="team-slot">${renderTeamPill(match.homeTeam)}</div>
+        <div class="versus-badge">נגד</div>
+        <div class="team-slot">${renderTeamPill(match.awayTeam)}</div>
+      </div>
+    `;
+  }
+
   function getTabs() {
     if (!state.bootstrap) return [];
     const me = state.bootstrap.me;
@@ -173,7 +250,7 @@
     app.innerHTML = `
       <div class="login-wrap">
         <div class="login-card">
-          <span class="badge">גרסת development v4.3</span>
+          <span class="badge">גרסת development v4.4</span>
           <h1>ליגת הניחושים</h1>
           <p class="muted">כניסה פרטית לפי שם משתמש וסיסמה. המסך של שחקן והמסך של אדמין מופרדים, ואין חשיפה של שמות משתמש וסיסמאות של אחרים.</p>
           ${extraInfo ? `<div class="notice warning" style="margin:12px 0;">${escapeHtml(extraInfo)}</div>` : ''}
@@ -399,8 +476,8 @@
       <div class="card">
         <div class="match-header">
           <div>
-            <h3 style="margin-bottom:6px;">${escapeHtml(teamDisplayName(match.homeTeam))} - ${escapeHtml(teamDisplayName(match.awayTeam))}</h3>
-            <div class="muted">${escapeHtml(match.stageLabel)}${match.groupId ? ` | בית ${escapeHtml(match.groupId)}` : ''} | ${escapeHtml(match.roundLabel)}</div>
+            ${renderMatchupHeader(match)}
+            <div class="muted match-subtitle">${escapeHtml(match.stageLabel)}${match.groupId ? ` | בית ${escapeHtml(match.groupId)}` : ''} | ${escapeHtml(match.roundLabel)}</div>
           </div>
           <div>${liveBadge}</div>
         </div>
@@ -412,10 +489,10 @@
         ${scoreState.status !== 'NS' ? `<div class="notice" style="margin-top:12px;">סטטוס: ${escapeHtml(scoreState.statusLabel)}${scoreState.currentHome != null ? ` | תוצאה נוכחית ${scoreState.currentHome}:${scoreState.currentAway}` : ''}</div>` : ''}
         <form class="prediction-form grid" data-match-id="${match.id}" style="margin-top:14px;">
           <div class="score-inputs">
-            <div>${escapeHtml(teamDisplayName(match.homeTeam))}</div>
+            <div>${renderTeamPill(match.homeTeam, 'mini')}</div>
             <input name="home" type="number" min="0" max="20" value="${my.home ?? ''}" ${match.isLocked ? 'disabled' : ''} />
             <input name="away" type="number" min="0" max="20" value="${my.away ?? ''}" ${match.isLocked ? 'disabled' : ''} />
-            <div>${escapeHtml(teamDisplayName(match.awayTeam))}</div>
+            <div>${renderTeamPill(match.awayTeam, 'mini')}</div>
           </div>
           <div class="actions-row">
             <button type="submit" ${match.isLocked ? 'disabled' : ''}>שמור ניחוש</button>
@@ -451,17 +528,18 @@
                   <div class="muted" style="margin-bottom:6px;">זוכה בטורניר</div>
                   <select name="winnerTeamId">
                     <option value="">בחר נבחרת</option>
-                    ${competition.winnerOptions.map((option) => `<option value="${escapeHtml(option.id)}" ${bonus.winnerTeamId === option.id ? 'selected' : ''}>${escapeHtml(optionDisplayLabel(option))}</option>`).join('')}
+                    ${renderWinnerOptionsMarkup(competition.winnerOptions, bonus.winnerTeamId)}
                   </select>
                 </label>
                 <label>
                   <div class="muted" style="margin-bottom:6px;">מלך שערים</div>
                   <select name="topScorerChoiceId">
                     <option value="">בחר שחקן</option>
-                    ${competition.topScorerOptions.map((option) => `<option value="${escapeHtml(option.id)}" ${bonus.topScorerChoiceId === option.id ? 'selected' : ''}>${escapeHtml(optionDisplayLabel(option))}${optionTeamDisplayName(option) && optionTeamDisplayName(option) !== 'כללי' ? ` · ${escapeHtml(optionTeamDisplayName(option))}` : ''}</option>`).join('')}
+                    ${renderTopScorerOptionsMarkup(competition.topScorerOptions, bonus.topScorerChoiceId)}
                   </select>
                 </label>
               </div>
+              <div class="muted">הרשימות ממוינות א׳-ת׳ לפי שם התצוגה. שמות הנבחרות מוצגים בעברית, בעוד ששם הקוד באנגלית נשמר מאחורי הקלעים עבור סנכרון לייב.</div>
               <div class="actions-row">
                 <button type="submit">שמור בונוסים</button>
               </div>
@@ -527,8 +605,8 @@
             <div class="card">
               <div class="match-header">
                 <div>
-                  <h3 style="margin-bottom:6px;">${escapeHtml(teamDisplayName(match.homeTeam))} - ${escapeHtml(teamDisplayName(match.awayTeam))}</h3>
-                  <div class="muted">${escapeHtml(match.stageLabel)}${match.groupId ? ` | בית ${escapeHtml(match.groupId)}` : ''} | ${escapeHtml(formatDate(match.kickoffAt))}</div>
+                  ${renderMatchupHeader(match, true)}
+                  <div class="muted match-subtitle">${escapeHtml(match.stageLabel)}${match.groupId ? ` | בית ${escapeHtml(match.groupId)}` : ''} | ${escapeHtml(formatDate(match.kickoffAt))}</div>
                 </div>
                 <div>
                   ${scoreState.finalLocked ? '<span class="badge done">סופי</span>' : scoreState.status !== 'NS' ? '<span class="badge live">לייב</span>' : match.isLocked ? '<span class="badge locked">נעול</span>' : '<span class="badge">ממתין</span>'}
@@ -675,14 +753,14 @@
                 <div class="muted" style="margin-bottom:6px;">זוכה בפועל</div>
                 <select name="winnerTeamId">
                   <option value="">בחר נבחרת</option>
-                  ${competition.winnerOptions.map((item) => `<option value="${escapeHtml(item.id)}" ${currentActual.winnerTeamId === item.id ? 'selected' : ''}>${escapeHtml(optionDisplayLabel(item))}</option>`).join('')}
+                  ${renderWinnerOptionsMarkup(competition.winnerOptions, currentActual.winnerTeamId)}
                 </select>
               </label>
               <label>
                 <div class="muted" style="margin-bottom:6px;">מלך שערים - בחירה</div>
                 <select name="topScorerChoiceId">
                   <option value="">בחר שחקן</option>
-                  ${competition.topScorerOptions.map((item) => `<option value="${escapeHtml(item.id)}" ${currentActual.topScorerChoiceId === item.id ? 'selected' : ''}>${escapeHtml(optionDisplayLabel(item))}</option>`).join('')}
+                  ${renderTopScorerOptionsMarkup(competition.topScorerOptions, currentActual.topScorerChoiceId)}
                 </select>
               </label>
             </div>
@@ -698,7 +776,7 @@
           <form id="manual-result-form" class="grid">
             <label>
               <div class="muted" style="margin-bottom:6px;">משחק</div>
-              <select name="matchId">${competition.matches.map((match) => `<option value="${match.id}">${escapeHtml(teamDisplayName(match.homeTeam))} - ${escapeHtml(teamDisplayName(match.awayTeam))} | ${escapeHtml(match.roundLabel)}</option>`).join('')}</select>
+              <select name="matchId">${competition.matches.map((match) => `<option value="${match.id}">${escapeHtml(`${teamFlag(match.homeTeam) ? `${teamFlag(match.homeTeam)} ` : ''}${teamDisplayName(match.homeTeam)} - ${teamFlag(match.awayTeam) ? `${teamFlag(match.awayTeam)} ` : ''}${teamDisplayName(match.awayTeam)} | ${match.roundLabel}`)}</option>`).join('')}</select>
             </label>
             <div class="form-row">
               <label><div class="muted" style="margin-bottom:6px;">תוצאת 90 - בית</div><input name="home90" type="number" min="0" required /></label>
